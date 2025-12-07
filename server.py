@@ -1,90 +1,57 @@
-import os
-import google.generativeai as genai
 from flask import Flask, request, jsonify
+import google.generativeai as genai
+import os
 
 app = Flask(__name__)
 
-# ============================================
-#  CONFIG
-# ============================================
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
+# ========= CONFIG ==========
+API_KEY = "AIzaSyD2lqGF23CJo8kKYUrx0aJUJAT4k5ah0ZM"
+genai.configure(api_key=API_KEY)
 
-MODEL = "gemini-1.5-flash-8b"   # تقدر تغيره لأي موديل أعلى
+@app.route("/", methods=["GET"])
+def home():
+    return "Rewriting Server Running"
 
 @app.route("/rewrite", methods=["POST"])
 def rewrite():
-    try:
-        data = request.json
-        text = data.get("text", "")
+    data = request.json
+    
+    if not data or "text" not in data:
+        return jsonify({"error": "No text provided"}), 400
 
-        if not text:
-            return jsonify({"error": "Missing text"}), 400
+    original = data["text"]
 
-        prompt = f"""
-أعد صياغة النص التالي بالكامل بالعربية الفصحى البسيطة بصياغة صحفية احترافية.
-أعد كتابة العنوان واجعله جذاباً دون مبالغة.
-أعد كتابة المحتوى بالكامل.
+    prompt = f"""
+أعد صياغة النص التالي بالكامل:
+- بأسلوب صحفي احترافي
+- إعادة كتابة بدون حذف معلومات
+- غير العنوان واجعله جذاب
+- لا تضف عناوين فرعية
 
-اكتب الناتج بهذا الشكل:
+اكتب الناتج بهذا التنسيق بالضبط:
 
 ###TITLE###
 (العنوان الجديد)
 
 ###CONTENT###
-(المحتوى الجديد)
+(المحتوى بعد إعادة الكتابة)
 
 النص:
-{text}
+{original}
 """
 
-        model = genai.GenerativeModel(MODEL)
-        response = model.generate_content(prompt)
-
-        return jsonify({"result": response.text})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/summary", methods=["POST"])
-def summary():
     try:
-        data = request.json
-        text = data.get("text", "")
-
-        prompt = f"لخص النص التالي في 40–60 كلمة بدون مبالغة:\n{text}"
-
-        model = genai.GenerativeModel(MODEL)
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
 
-        return jsonify({"summary": response.text})
+        output = response.text
+
+        return jsonify({"result": output})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/excerpt", methods=["POST"])
-def excerpt():
-    try:
-        data = request.json
-        text = data.get("text", "")
-
-        prompt = f"أنشئ مقتطف (Excerpt) من 20 كلمة للنص التالي:\n{text}"
-
-        model = genai.GenerativeModel(MODEL)
-        response = model.generate_content(prompt)
-
-        return jsonify({"excerpt": response.text})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/")
-def home():
-    return "FG Gemini Python Server is running!", 200
-
-
+# Run (for local debugging only)
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=10000)
