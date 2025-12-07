@@ -4,54 +4,56 @@ import os
 
 app = Flask(__name__)
 
-# ========= CONFIG ==========
-API_KEY = "AIzaSyD2lqGF23CJo8kKYUrx0aJUJAT4k5ah0ZM"
+# ======================================================
+# 🔒 Load API KEY from Render Environment Variable
+# مثل: GEMINI_API_KEY في لوحة التحكم
+# ======================================================
+API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not API_KEY:
+    raise Exception("❌ ERROR: No GEMINI_API_KEY found in environment variables!")
+
 genai.configure(api_key=API_KEY)
 
-@app.route("/", methods=["GET"])
-def home():
-    return "Rewriting Server Running"
 
 @app.route("/rewrite", methods=["POST"])
-def rewrite():
-    data = request.json
-    
+def rewrite_text():
+    data = request.get_json()
+
     if not data or "text" not in data:
-        return jsonify({"error": "No text provided"}), 400
+        return jsonify({"error": "Missing 'text' in request"}), 400
 
     original = data["text"]
 
     prompt = f"""
-أعد صياغة النص التالي بالكامل:
-- بأسلوب صحفي احترافي
-- إعادة كتابة بدون حذف معلومات
-- غير العنوان واجعله جذاب
-- لا تضف عناوين فرعية
-
-اكتب الناتج بهذا التنسيق بالضبط:
-
+أعد صياغة النص التالي بالكامل بصياغة صحفية جذابة:
+اكتب المخرجات بالشكل التالي فقط:
 ###TITLE###
-(العنوان الجديد)
-
+(العنوان)
 ###CONTENT###
-(المحتوى بعد إعادة الكتابة)
+(المقال بعد إعادة الصياغة)
 
-النص:
+النص الأصلي:
 {original}
 """
 
     try:
+        # أفضل موديل مجاني حالياً
         model = genai.GenerativeModel("gemini-1.5-flash-8b")
+
         response = model.generate_content(prompt)
+        result = response.text
 
-        output = response.text
-
-        return jsonify({"result": output})
+        return jsonify({"result": result})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# Run (for local debugging only)
+@app.route("/", methods=["GET"])
+def home():
+    return "Rewriting Server Running"
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=5000)
