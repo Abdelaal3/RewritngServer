@@ -39,7 +39,7 @@ def rewrite_text():
 
     try:
         # أفضل موديل مجاني حالياً
-        model = genai.GenerativeModel("gemini-1.5-flash-8b")
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
         response = model.generate_content(prompt)
         result = response.text
